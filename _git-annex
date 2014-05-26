@@ -88,8 +88,8 @@ print(' '.join(uuids))"))
     _describe -t uuids uuid uuids
 }
 
-local -a arguments
-arguments=(
+local -a common_opts matching_opts
+common_opts=(
     '--force[allow actions that may lose annexed data]'
     '(-F --fast)'{-F,--fast}'[avoid slow operations]'
     '(-a --auto)'{-a,--auto}'[automatic mode]'
@@ -115,7 +115,8 @@ arguments=(
     '--notify-finish[show desktop notification after transfer finishes]'
     '--notify-start[show desktop notification after transfer starts]'
     '-c name=[override git configuration setting]'
-
+)
+matching_opts=(
     '(-x --exclude=)'{-x,--exclude=}'[skip files matching the glob pattern]'
     '(-I --include=)'{-I,--include=}'[limit to files matching the glob pattern]'
     '(-i --in=)'{-i,--in=}'[match files present in a remote]:repository:__annex_repository'
@@ -137,19 +138,13 @@ arguments=(
 )
 
 _arguments -C \
-           $arguments \
+           $common_opts $matching_opts \
            ': :->command' \
            '*:: :->subcmd'
 
 case $state in
 (command)
-    local -a common
-    local -a setup
-    local -a maintenance
-    local -a query
-    local -a metadata
-    local -a utility
-    local -a plumbing
+    local -a common setup maintenance query metadata utility plumbing
     common=(
         add:'adds files in the path to the annex'
         get:'makes the content of annexed files available in this repository'
@@ -247,30 +242,36 @@ case $state in
 
 (subcmd)
     case ${line[1]} in
-    (direct|indirect|info|map|merge|repair|uninit|unused|upgrade|vcycle|version|vicfg|vpop)
+    (direct|indirect|map|merge|repair|uninit|upgrade|vcycle|version|vicfg|vpop)
         _message 'No more arguments'
         ;;
-    (sync)
-        __annex_remotes
-        ;;
-    (dead|semitrust|sync|trust|untrust|wanted)
+    (dead|semitrust|trust|untrust)
         __annex_repository
         ;;
-    (migrate|reinject|unannex)
+    (fix|reinject|unannex)
         _path_files
         ;;
+    (unused)
+        _arguments $common_opts
+        ;;
 
+    (add)
+        _arguments $common_opts $matching_opts \
+                   '--include-dotfiles[include dotfiles that are not explicitly listed]' \
+                   '*:path:_path_files'
+        ;;
     (addunused|dropunused)
-        _alternative \
-            'range:Numbers:_guard "[0-9]#" "range of unused objects"' \
-            'all:all objects:(all)'
+        _alternative $common_opts \
+                     'range:Numbers:_guard "[0-9]#" "range of unused objects"' \
+                     'all:all objects:(all)'
         ;;
     (addurl)
-        _arguments ':url:_urls' \
+        _arguments $common_opts \
                    '(-F --fast)'{-F,--fast}'[don''t download the url immediately]' \
                    '--relaxed[don''t store the size of the url''s content]' \
                    '--pathdepth=[path depth to use for the file name]: :_guard "-#[0-9]#" "integer"' \
-                   '--file=[destination file]:file name:_path_files'
+                   '--file=[destination file]:path:_path_files' \
+                   '*:url:_urls'
         ;;
     (assistant)
         _arguments '--foreground[do not daemonize]' \
@@ -286,45 +287,62 @@ case $state in
         _arguments ':repository:__annex_repository' \
                    '*:param=value parameters:'
         ;;
+    (find)
+        _arguments $common_opts $matching_opts \
+                   '--print0[output filenames terminated with nulls]' \
+                   '*:path:_path_files'
+        ;;
     (forget)
         _arguments '--drop-dead[prune references to dead repositories]'
         ;;
+    (fsck)
+        _arguments $common_opts \
+                   '--incremental[start a new incremental fsck]' \
+                   '--more[continue an incremental fsck]' \
+                   '--incremental-schedule=[schedule the next incremental fsck]' \
+                   '*:path:_path_files'
     (group|ungroup)
         _arguments ':repository:__annex_repository' \
                    ':group name:__annex_groups'
         ;;
     (import)
-        _arguments '--duplicate[do not delete source files]' \
+        _arguments $common_opts \
+                   '--duplicate[do not delete source files]' \
                    '--deduplicate[delete source files whose content was imported before]' \
                    '--clean-duplicates[delete duplicate source files (import nothing)]' \
-                   '--skip-duplicates[import only new files]'
-        _path_files
+                   '--skip-duplicates[import only new files]' \
+                   '*:path:_path_files'
         ;;
     (importfeed)
-        _arguments  '--template=[template for filenames]' \
-                   '--relaxed[skip size check]'
-        _arguments -C $arguments
-        _urls
+        _arguments $common_opts \
+                   '--template=[template for filenames]' \
+                   '--relaxed[skip size check]' \
+                   '*:feed url:_urls'
+        ;;
+    (info)
+        _arguments $common_opts $matching_opts \
+                   '*:directory:_path_files -/'
         ;;
     (init|reinit)
         _arguments '::description:'
         ;;
     (list)
-        _arguments '--allrepos[list all repositories]'
-        _arguments -C $arguments
-        _path_files
+        _arguments $common_opts $matching_opts \
+                   '--allrepos[list all repositories]' \
+                   '*:path:_path_files'
         ;;
     (log)
-        _arguments '--since=' '--after=' '--until=' '--before=' '--max-count='
-        _arguments -C $arguments
-        _path_files
+        _arguments $common_opts $matching_opts \
+                   '--since=' '--after=' '--until=' '--before=' '--max-count=' \
+                   '--gource[generate output suitable for gource]' \
+                   '*:path:_path_files'
         ;;
     (metadata)
         _arguments '-s=[change a field value]' \
                    '-g=[get a field value]' \
                    '-t=[set a tag]' \
-                   '-u=[remove a tag]'
-        _path_files
+                   '-u=[remove a tag]' \
+                   '*:path:_path_files'
         ;;
     (numcopies)
         _arguments ': :_guard "[0-9]#" "number of copies"'
@@ -333,12 +351,20 @@ case $state in
         _arguments ':file:_files' \
                    ':url:_urls'
         ;;
-    (schedule)
+    (schedule|wanted)
         _arguments ':repository:__annex_repository' \
                    ':epxression:'
         ;;
+    (sync)
+        _arguments $common_opts \
+                   '--content[transfer annexed files contents]' \
+                   '*:remote:__annex_remotes'
+        ;;
     (vadd|vfilter|view)
         _message 'field=value, field=glob, field/=path, field!=value, /=path, tag, !tag'
+        ;;
+    (vpop)
+        _arguments ': :_guard "[0-9]#" "number views to pop"'
         ;;
     (watch)
         _arguments '--foreground[do not daemonize]' \
@@ -348,8 +374,8 @@ case $state in
         _arguments '--listen=[accept connections to this address]'
         ;;
     (*)
-        _arguments -C $arguments
-        _path_files
+        _arguments $common_opts $matching_opts \
+                   '*:path:_path_files'
         ;;
     esac
     ;;
