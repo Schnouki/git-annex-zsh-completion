@@ -7,11 +7,12 @@
 #
 # Note that this completion is still very much early alpha work in progress.
 #
-# This completion depends on Python for a jason parser, sorry. Unfortunately
+# This completion depends on Python for a json parser, sorry. Unfortunately
 # there is no such thing in zsh (yet).
 #
 # Skeleton implementation by Frank Terbeck <ft@bewatermyfriend.org>
 # Blanks filled in by Valentin Haenel <valentin.haenel@gmx.de>
+# Updated by Thomas Jost <schnouki@schnouki.net>
 # Licence: WTFPL (http://sam.zoy.org/wtfpl/)
 #
 # To use this completion drop it somewhere in you $fpath, e.g.:
@@ -24,6 +25,8 @@
 # ----
 #
 # * 'git annex add' to only complete files not in annex
+# * user defined groups are not detected
+# * remotes with spaces in their description are not handled
 #
 
 local state line context
@@ -31,98 +34,112 @@ local -A opt_args
 
 __annex_backend(){
     local -a backends
-    backends=($(git annex status --fast --json |
-    python -c "
-import sys
-import json
-parsed = json.loads(sys.stdin.read())
-print ' '.join(parsed['supported backends'])"))
+    backends=($(git annex version | awk -F': ' '/key\/value backends/ {print $2}'))
     _describe -t backends backend backends
 }
 
-__annex_remotes(){
+__annex_groups(){
+    local -a groups
+    groups=(client transfer backup incrementalbackup smallarchive archive source manual public unwanted)
+    _describe -t groups 'standard groups' groups
+}
 
+__annex_remotes(){
     local -a remotes
     remotes=($(git remote))
-    _describe -t remotes 'configured remote' remotes
-
+    _describe -t remotes 'locally available remotes' remotes
 }
 
 __annex_repository(){
-
     local -a currents
     currents=('here')
-    _describe -t currents current currents
+    _describe -t current current currents
 
     __annex_remotes
 
     local -a descriptions
-    descriptions=($(git annex status --fast --json |
-    python -c "
-import sys
-import json
-parsed = json.loads(sys.stdin.read())
+    descriptions=($(git annex info --fast --json |
+    python3 -c "
+import json, re, shlex, sys
+parsed = json.load(sys.stdin)
 descriptions = []
-for repo in (parsed['trusted repositories']
-        + parsed['semitrusted repositories']
-        + parsed['untrusted repositories']):
-    descriptions.append(repo['description'])
-print ' '.join(descriptions)"))
-    _describe -t descriptions description descriptions
+for repo in (parsed['trusted repositories'] + parsed['semitrusted repositories'] + parsed['untrusted repositories']):
+    desc = repo['description']
+    m = re.match(r'(?:(.+?)\s*)?\[(.+)\]', desc)
+    if m is not None:
+        desc = m.group(2) + ('' if m.group(1) is None else (':' + m.group(1)))
+    descriptions.append(desc)
+print(' '.join(descriptions))"))
+    _describe -t descriptions 'known remotes' descriptions
 
     local -a uuids
-    uuids=($(git annex status --fast --json |
-    python -c "
-import sys
-import json
-parsed = json.loads(sys.stdin.read())
+    uuids=($(git annex info --fast --json |
+    python3 -c "
+import json, re, sys
+parsed = json.load(sys.stdin)
 uuids = []
-for repo in (parsed['trusted repositories']
-        + parsed['semitrusted repositories']
-        + parsed['untrusted repositories']):
-    uuids.append(repo['uuid'])
-print ' '.join(uuids)"))
+for repo in (parsed['trusted repositories'] + parsed['semitrusted repositories'] + parsed['untrusted repositories']):
+    desc = repo['description']
+    m = re.match(r'(?:(?P<desc>.+?)\s*)?\[(?P<name>.+)\]', desc)
+    if m is not None:
+        desc = m.group(1) if m.group(1) is not None else m.group(2)
+    uuids.append('%s:%s' % (repo['uuid'], desc))
+print(' '.join(uuids))"))
     _describe -t uuids uuid uuids
 }
 
 local -a arguments
 arguments=(
-    '--and[both previous and next option match]'
+    '--force[allow actions that may lose annexed data]'
+    '(-F --fast)'{-F,--fast}'[avoid slow operations]'
     '(-a --auto)'{-a,--auto}'[automatic mode]'
-    '(-d --debug)'{-d,--debug}'[show debug messages]'
-    '(-x --exclude=)'{-x,--exclude=}'[skips files matching the globbing pattern]'
-    '(-b --backend=)'{-b,--backend=}'[specifies which key-value backend to use]::backend:__annex_backend'
-    '-c name=-[override git configuration settings]'
-    '(-C --copies=)'{-C,--copies=}'[skip files with fewer copies]'
-    '--force[force unsafe actions]'
-    '(-f --from=)'{-f,--from=}'[copy/move from repository]:repository:__annex_remotes'
-    '(-F --fast)'{-F,--fast}'[less expensive version of some commands]'
-    '(-i --in=)'{-i,--in=}'[skip files not present in a remote]:repository:__annex_repository'
-    '(-j --json)'{-j,--json}'[generate machine readable JSON]'
+    '--all[operate on all data, includin old versions of files]'
+    '--unused[operate on all unused data]'
     '(-k --key=)'{-k,--key=}'[specifies a key to operate on]'
-    '(-N --numcopies=)'{-N,--numcopies=}'[overrides annex.numcopies]'
-    '--not[negate next option]'
-    '--or[either previous or next option match]'
-    '--print0[output filenames terminated with nulls, for  use  with  xargs -0]'
+    '(-q --quiet)'{-q,--quiet}'[avoid verbose output]'
+    '(-v --verbose)'{-v,--verbose}'[allow verbose output (default)]'
+    '(-j --json)'{-j,--json}'[generate machine readable JSON]'
+    '(-d --debug)'{-d,--debug}'[show debug messages]'
+    '--no-debug[don''t show debug messages]'
+    '(-f --from=)'{-f,--from=}'[copy/move from repository]:repository:__annex_remotes'
     '(-t --to=)'{-t,--to=}'[copy/move to repository]:repository:__annex_remotes'
-    '--semitrust=-[override trust settings]:repository:__annex_repository'
-    '--trust=-[override trust settings]:repository:__annex_repository'
-    '--untrust=-[override trust settings]:repository:__annex_repository'
-    '--verbose[verbose display]'
-    '--quiet'
+    '(-N --numcopies=)'{-N,--numcopies=}'[override default number of copies]'
+    '(-T --time-limit=)'{-T,--time-limit=}'[stop after the specified amount of time]'
+    '--trust=[override trust setting]:repository:__annex_repository'
+    '--semitrust=[override trust setting back to default]:repository:__annex_repository'
+    '--untrust=[override trust setting to untrusted]:repository:__annex_repository'
+    '--trust-glacier-inventory[trust Amazon Glacier inventory]'
+    '(-b --backend=)'{-b,--backend=}'[specify key-value backend to use]:backend:__annex_backend'
+    '--format=[specifies a custom output format]'
+    '--user-agent=[override default User-Agent]'
+    '--notify-finish[show desktop notification after transfer finishes]'
+    '--notify-start[show desktop notification after transfer starts]'
+    '-c name=[override git configuration setting]'
+
+    '(-x --exclude=)'{-x,--exclude=}'[skip files matching the glob pattern]'
+    '(-I --include=)'{-I,--include=}'[limit to files matching the glob pattern]'
+    '(-i --in=)'{-i,--in=}'[match files present in a remote]:repository:__annex_repository'
+    '(-C --copies=)'{-C,--copies=}'[skip files with fewer copies]'
+    '--lackingcopies=[match files that need more copies]'
+    '--approxlackingcopies=[match files that need more copies (faster)]'
+    '(-B --inbackend=)'{-B,--inbackend=}'[match files using a key-value backend]:backend:__annex_backend'
+    '--inallgroup=[match files present in all remotes in a group]:group:__annex_groups'
+    '--smallerthan=[match files smaller than a size]'
+    '--largerthan=[match files larger than a size]'
+    '--metadata=[match files with attached metadata]'
+    '--want-get[match files the repository wants to get]'
+    '--want-drop[match files the repository wants to drop]'
+    '--not[negate next option]'
+    '--and[both previous and next option must match]'
+    '--or[either previous or next option must match]'
     '-([open group of options]'
     '-)[close group of options]'
-    ': :->command'
-    '*:: :->subcmd'
 )
 
-_arguments -C $arguments
-
-local -a watch_arguments
-watch_arguments=(
-    '--foreground[do not daemonize]'
-    '--stop[stop the daemon]'
-)
+_arguments -C \
+           $arguments \
+           ': :->command' \
+           '*:: :->subcmd'
 
 case $state in
 (command)
@@ -130,6 +147,7 @@ case $state in
     local -a setup
     local -a maintenance
     local -a query
+    local -a metadata
     local -a utility
     local -a plumbing
     common=(
@@ -142,7 +160,12 @@ case $state in
         edit:'alias for the unlock command'
         lock:'lock file again after editing'
         sync:'synchronise with one or more remotes'
-        addurl:'downloads each url to a file, which is added to the annex.'
+        merge:'merge the git-annex branches of remotes'
+        mirror:'mirror a source repository to a destination repository'
+        addurl:'downloads each url to a file, which is added to the annex'
+        rmurl:'record that a file is no longer available at a url'
+        import:'move files from somewhere else and add them to the annex'
+        importfeed:'import the contents of podcast feeds'
         watch:'watches for changes and automatically add files'
         assistant:'like watch but automatically syncs changes to other remotes'
         webapp:'runs a web app to setup and control the git-annex assistant'
@@ -151,59 +174,178 @@ case $state in
         init:'initialize an annex'
         describe:'changes the description of a repository'
         initremote:'set up a special remote'
+        enableremote:'enable an existing special remote for use in the current repository'
+        numcopies:'teels git-annex how many copies it should preserve of files'
         trust:'records that a repository is trusted to not  unexpectedly  lose  content'
         untrust:'records that a repository is not trusted and could lose content at any time'
         semitrust:'returns a repository to the default semi trusted state'
         dead:'Indicates that the repository has been irretrevably lost.  (To undo, use semitrust.)'
+        group:'adds a repository to a group, such as "archival", "enduser", or "transfer"'
+        ungroup:'removes a repository grom a group'
+        wanted:'display or configure the preferred conttent setting for a repository'
+        schedule:'display or configure scheduled jobs'
+        vicfg:'opens $EDITOR on a temp file containing most of the configuration settings'
+        direct:'switches a repository to use direct mode'
+        indirect:'switches a repository back from direct mode to the default, indirect mode'
         )
     maintenance=(
         fsck:'check annex consistency'
         unused:'check for data that has no symlinks pointing to it'
         dropunused:'drop unused data, as reported by unused'
-        merge:'merge the git-annex branches of remotes'
+        addunused:'adds back files listed by unused'
         fix:'fix up symlinks that have become broken'
         upgrade:'upgrades the repository to current layout'
+        forget:'rewrites the git-annex branch, throwing away historical data'
+        repair:'repairs many of the problem with git repositories'
         )
     query=(
-        version:'print version and repository information'
         find:'search for present/missing files in current annex'
         whereis:'show all repositories that contain a file'
-        status:'displays some statistics and other information'
+        list:'displays a table of remotes that contain the contents of the specified files'
+        log:'displays the location log for the specified files'
+        info:'displays some statistics and other information'
+        version:'print version and repository information'
         map:'generate a visual map of repositories'
+        )
+    metadata=(
+        metadata:'display or change metadata fields for the specified files'
+        view:'use metadata to build a view branch of the files in the current branch'
+        vpop:'switches from the currently active view back to the previous one'
+        vfilter:'filters the current view'
+        vadd:'adds an additional level of directories to categorize the files in the current view'
+        vcycle:'cycles the order of a view involving nested subdirectories'
         )
     utility=(
         migrate:'migrate annexd files to new backend'
+        reinject:'moves a src file into the annex as the content of the dest file.'
         unannex:'undo an accidental git annex add command'
         uninit:'stop using git-annex entirely'
+        reinit:'reinit a repository, reusing its UUID'
         )
     plumbing=(
         pre-commit:'fixes up symlinks that are staged as part of a commit'
-        reinject:'moves a src file into the annex as the content of the dest file.'
-        dropkey:'drop annexd data for specified keys'
+        lookupkey:'looks up the key used for a file in the index'
+        examinekey:'prints information that can be determined purely looking at a key'
         fromkey:'set file to link to given key'
+        dropkey:'drop annexd data for specified keys'
+        transferkey:'request a single key to be transferred'
+        transferkeys:'internal command for the assistant'
+        rekey:'like migrate, but specifying both the file and its new key'
+        findref:'like find, but for a specific git ref instead of the current work tree'
+        test:'runs git-annex''s built-in test suite'
+        remotedaemon:'detects when network remotes have received git pushes and fetches from them'
+        xmppgit:'internal command to perform git pulls over XMPP'
     )
     _describe -t common_commands "common commands" common
     _describe -t setup_commands "setup commands"  setup
     _describe -t maintenance_commands "maintenance commands"  maintenance
     _describe -t query_commands "query commands"  query
+    _describe -t metadata_commands "metadata commands"  metadata
     _describe -t utility_commands "utility commands"  utility
     _describe -t plumbing_commands "plumbing commands"  plumbing
     ;;
+
 (subcmd)
     case ${line[1]} in
-    (trust|untrust|semitrust|dead)
-        __annex_repository
-        return true
-        ;;
-    (map|status)
+    (direct|indirect|info|map|merge|repair|uninit|unused|upgrade|vcycle|version|vicfg|vpop)
         _message 'No more arguments'
         ;;
     (sync)
         __annex_remotes
-        return true
         ;;
-    (watch|assistant)
-        _arguments -C $watch_arguments
+    (dead|semitrust|sync|trust|untrust|wanted)
+        __annex_repository
+        ;;
+    (migrate|reinject|unannex)
+        _path_files
+        ;;
+
+    (addunused|dropunused)
+        _alternative \
+            'range:Numbers:_guard "[0-9]#" "range of unused objects"' \
+            'all:all objects:(all)'
+        ;;
+    (addurl)
+        _arguments ':url:_urls' \
+                   '(-F --fast)'{-F,--fast}'[don''t download the url immediately]' \
+                   '--relaxed[don''t store the size of the url''s content]' \
+                   '--pathdepth=[path depth to use for the file name]: :_guard "-#[0-9]#" "integer"' \
+                   '--file=[destination file]:file name:_path_files'
+        ;;
+    (assistant)
+        _arguments '--foreground[do not daemonize]' \
+                   '--stop[stop the daemon]' \
+                   '--autostart[start in known repositories]' \
+                   '--startdelay=[delay before running startup scan]'
+        ;;
+    (describe)
+        _arguments ':repository:__annex_repository' \
+                   ':description:'
+        ;;
+    (enableremote|initremote)
+        _arguments ':repository:__annex_repository' \
+                   '*:param=value parameters:'
+        ;;
+    (forget)
+        _arguments '--drop-dead[prune references to dead repositories]'
+        ;;
+    (group|ungroup)
+        _arguments ':repository:__annex_repository' \
+                   ':group name:__annex_groups'
+        ;;
+    (import)
+        _arguments '--duplicate[do not delete source files]' \
+                   '--deduplicate[delete source files whose content was imported before]' \
+                   '--clean-duplicates[delete duplicate source files (import nothing)]' \
+                   '--skip-duplicates[import only new files]'
+        _path_files
+        ;;
+    (importfeed)
+        _arguments  '--template=[template for filenames]' \
+                   '--relaxed[skip size check]'
+        _arguments -C $arguments
+        _urls
+        ;;
+    (init|reinit)
+        _arguments '::description:'
+        ;;
+    (list)
+        _arguments '--allrepos[list all repositories]'
+        _arguments -C $arguments
+        _path_files
+        ;;
+    (log)
+        _arguments '--since=' '--after=' '--until=' '--before=' '--max-count='
+        _arguments -C $arguments
+        _path_files
+        ;;
+    (metadata)
+        _arguments '-s=[change a field value]' \
+                   '-g=[get a field value]' \
+                   '-t=[set a tag]' \
+                   '-u=[remove a tag]'
+        _path_files
+        ;;
+    (numcopies)
+        _arguments ': :_guard "[0-9]#" "number of copies"'
+        ;;
+    (rmurl)
+        _arguments ':file:_files' \
+                   ':url:_urls'
+        ;;
+    (schedule)
+        _arguments ':repository:__annex_repository' \
+                   ':epxression:'
+        ;;
+    (vadd|vfilter|view)
+        _message 'field=value, field=glob, field/=path, field!=value, /=path, tag, !tag'
+        ;;
+    (watch)
+        _arguments '--foreground[do not daemonize]' \
+                   '--stop[stop the daemon]'
+        ;;
+    (webapp)
+        _arguments '--listen=[accept connections to this address]'
         ;;
     (*)
         _arguments -C $arguments
@@ -212,4 +354,3 @@ case $state in
     esac
     ;;
 esac
-
