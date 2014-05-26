@@ -46,7 +46,7 @@ __annex_groups(){
 
 __annex_remotes(){
     local -a remotes
-    remotes=($(git remote))
+    remotes=($(git remote 2>/dev/null))
     _describe -t remotes 'locally available remotes' remotes
 }
 
@@ -58,7 +58,7 @@ __annex_repository(){
     __annex_remotes
 
     local -a descriptions
-    descriptions=($(git annex info --fast --json |
+    descriptions=($(git annex info --fast --json 2>/dev/null |
     python3 -c "
 import json, re, shlex, sys
 parsed = json.load(sys.stdin)
@@ -73,7 +73,7 @@ print(' '.join(descriptions))"))
     _describe -t descriptions 'known remotes' descriptions
 
     local -a uuids
-    uuids=($(git annex info --fast --json |
+    uuids=($(git annex info --fast --json 2>/dev/null |
     python3 -c "
 import json, re, sys
 parsed = json.load(sys.stdin)
