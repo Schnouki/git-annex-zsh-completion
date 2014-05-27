@@ -95,7 +95,7 @@ common_opts=(
     '(-a --auto)'{-a,--auto}'[automatic mode]'
     '--all[operate on all data, includin old versions of files]'
     '(-U --unused)'{-U,--unused}'[operate on all unused data]'
-    '(-k --key=)'{-k,--key=}'[specifies a key to operate on]'
+    '(-k --key=)'{-k,--key=}'[specifies a key to operate on]:key'
     '(-q --quiet)'{-q,--quiet}'[avoid verbose output]'
     '(-v --verbose)'{-v,--verbose}'[allow verbose output (default)]'
     '(-j --json)'{-j,--json}'[generate machine readable JSON]'
@@ -103,31 +103,31 @@ common_opts=(
     '--no-debug[don''t show debug messages]'
     '(-f --from=)'{-f,--from=}'[copy/move from repository]:repository:__annex_remotes'
     '(-t --to=)'{-t,--to=}'[copy/move to repository]:repository:__annex_remotes'
-    '(-N --numcopies=)'{-N,--numcopies=}'[override default number of copies]'
-    '(-T --time-limit=)'{-T,--time-limit=}'[stop after the specified amount of time]'
+    '(-N --numcopies=)'{-N,--numcopies=}'[override default number of copies]: :_guard "[0-9]#" "number of copies"'
+    '(-T --time-limit=)'{-T,--time-limit=}'[stop after the specified amount of time]:time'
     '--trust=[override trust setting]:repository:__annex_repository'
     '--semitrust=[override trust setting back to default]:repository:__annex_repository'
     '--untrust=[override trust setting to untrusted]:repository:__annex_repository'
     '--trust-glacier-inventory[trust Amazon Glacier inventory]'
     '(-b --backend=)'{-b,--backend=}'[specify key-value backend to use]:backend:__annex_backend'
-    '--format=[specifies a custom output format]'
-    '--user-agent=[override default User-Agent]'
+    '--format=[specifies a custom output format]:format'
+    '--user-agent=[override default User-Agent]:User-Agent'
     '--notify-finish[show desktop notification after transfer finishes]'
     '--notify-start[show desktop notification after transfer starts]'
-    '-c name=[override git configuration setting]'
+    '-c name=[override git configuration setting]:git configuration setting'
 )
 matching_opts=(
-    '(-x --exclude=)'{-x,--exclude=}'[skip files matching the glob pattern]'
-    '(-I --include=)'{-I,--include=}'[limit to files matching the glob pattern]'
+    '(-x --exclude=)'{-x,--exclude=}'[skip files matching the glob pattern]:glob pattern'
+    '(-I --include=)'{-I,--include=}'[limit to files matching the glob pattern]:glob pattern'
     '(-i --in=)'{-i,--in=}'[match files present in a remote]:repository:__annex_repository'
-    '(-C --copies=)'{-C,--copies=}'[skip files with fewer copies]'
-    '--lackingcopies=[match files that need more copies]'
-    '--approxlackingcopies=[match files that need more copies (faster)]'
+    '(-C --copies=)'{-C,--copies=}'[skip files with fewer copies]: :_guard "[0-9]#" "number of copies"'
+    '--lackingcopies=[match files that need more copies]: :_guard "[0-9]#" "number of copies"'
+    '--approxlackingcopies=[match files that need more copies (faster)]: :_guard "[0-9]#" "number of copies"'
     '(-B --inbackend=)'{-B,--inbackend=}'[match files using a key-value backend]:backend:__annex_backend'
     '--inallgroup=[match files present in all remotes in a group]:group:__annex_groups'
-    '--smallerthan=[match files smaller than a size]'
-    '--largerthan=[match files larger than a size]'
-    '--metadata=[match files with attached metadata]'
+    '--smallerthan=[match files smaller than a size]:size'
+    '--largerthan=[match files larger than a size]:size'
+    '--metadata=[match files with attached metadata]:field=glob'
     '--want-get[match files the repository wants to get]'
     '--want-drop[match files the repository wants to drop]'
     '--not[negate next option]'
@@ -275,7 +275,7 @@ case $state in
         _arguments '--foreground[do not daemonize]' \
                    '--stop[stop the daemon]' \
                    '--autostart[start in known repositories]' \
-                   '--startdelay=[delay before running startup scan]'
+                   '--startdelay=[delay before running startup scan]:delay'
         ;;
     (describe)
         _arguments ':repository:__annex_repository' \
@@ -297,7 +297,7 @@ case $state in
         _arguments $common_opts $matching_opts\
                    '(-S --incremental)'{-S,--incremental}'[start an incremental fsck]' \
                    '(-m --more)'{-m,--more}'[continue an incremental fsck]' \
-                   '--incremental-schedule=[schedule incremental fscking]' \
+                   '--incremental-schedule=[schedule incremental fscking]:schedule expression' \
                    '*:path:_path_files'
         ;;
     (group|ungroup)
@@ -314,7 +314,7 @@ case $state in
         ;;
     (importfeed)
         _arguments $common_opts \
-                   '--template=[template for filenames]' \
+                   '--template=[template for filenames]:template' \
                    '--relaxed[skip size check]' \
                    '*:feed url:_urls'
         ;;
@@ -332,10 +332,10 @@ case $state in
         ;;
     (log)
         _arguments $common_opts $matching_opts \
-                   '--since=[show log since date]' \
-                   '--after=[show log after date]' \
-                   '--until=[show log until date]' \
-                   '--before=[show log before date]' \
+                   '--since=[show log since date]:since date' \
+                   '--after=[show log after date]:after date' \
+                   '--until=[show log until date]:until date' \
+                   '--before=[show log before date]:before date' \
                    '(-n --max-count=)'{-m,--max-count}'[limit number of logs displayed]: :_guard "[0-9]#" "number of logs"' \
                    '--gource[generate output suitable for gource]' \
                    '*:path:_path_files'
@@ -347,10 +347,10 @@ case $state in
                    '(-k --key=)'{-k,--key=}'[operate on specified key]' \
                    '(-j --json)'{-j,--json}'[enable JSON output]' \
                    '(-U --unused)'{-U,--unused}'[operate on files found y last run of git-annex unused]' \
-                   '(-s --set=)'{-s,--set}'[change a field value]' \
-                   '(-g --get=)'{-g,--get}'[get a field value]' \
-                   '(-t --tag=)'{-t,--tag}'[set a tag]' \
-                   '(-u --untag=)'{-u,--untag}'[remove a tag]' \
+                   '(-s --set=)'{-s,--set}'[change a field value]:field=value' \
+                   '(-g --get=)'{-g,--get}'[get a field value]:field' \
+                   '(-t --tag=)'{-t,--tag}'[set a tag]:tag' \
+                   '(-u --untag=)'{-u,--untag}'[remove a tag]:tag' \
                    '*:path:_path_files'
         ;;
     (numcopies)
@@ -380,7 +380,7 @@ case $state in
                    '--stop[stop the daemon]'
         ;;
     (webapp)
-        _arguments '--listen=[accept connections to this address]'
+        _arguments '--listen=[accept connections to this address]:address'
         ;;
     (*)
         _arguments $common_opts $matching_opts \
