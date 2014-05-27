@@ -341,7 +341,12 @@ case $state in
                    '*:path:_path_files'
         ;;
     (metadata)
-        _arguments $common_opts $matching_opts \
+        # No $common_opts: -t is for --tag, not --to.
+        _arguments $matching_opts \
+                   '--all[operate on all versions of all files]' \
+                   '(-k --key=)'{-k,--key=}'[operate on specified key]' \
+                   '(-j --json)'{-j,--json}'[enable JSON output]' \
+                   '(-U --unused)'{-U,--unused}'[operate on files found y last run of git-annex unused]' \
                    '(-s --set=)'{-s,--set}'[change a field value]' \
                    '(-g --get=)'{-g,--get}'[get a field value]' \
                    '(-t --tag=)'{-t,--tag}'[set a tag]' \
