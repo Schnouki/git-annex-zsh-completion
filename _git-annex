@@ -138,7 +138,6 @@ matching_opts=(
 )
 
 _arguments -C \
-           $common_opts $matching_opts \
            ': :->command' \
            '*:: :->subcmd'
 
