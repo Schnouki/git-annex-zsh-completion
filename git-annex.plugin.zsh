@@ -1,1 +1,1 @@
-compdef _git-annex 'git annex'=git-annex
+compdef _git-annex
