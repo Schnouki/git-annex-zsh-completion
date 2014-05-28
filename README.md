@@ -5,6 +5,14 @@ See also [tips in the git-annex ikiwiki](http://git-annex.branchable.com/tips/ZS
 
 # Install
 
+To install it:
+
+1. make sure your have Python 3 installed (as `python3` somewhere in your `$PATH`; tested with 3.4, should work with 3.2+)
+2. get it from [GitHub](https://github.com/Schnouki/git-annex-zsh-completion)
+3. copy `_git-annex` to somewhere in your `$fpath` (I use `$HOME/.config/zsh/completion`)
+4. run `autoload -U path/to/_git-annex`
+5. type `git annex <TAB>`
+
 If you use [oh-my-zsh][] then just clone the repository inside your oh-my-zsh repo:
 
 ```Shell
