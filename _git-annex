@@ -199,6 +199,7 @@ case $state in
         log:'displays the location log for the specified files'
         info:'displays some statistics and other information'
         version:'print version and repository information'
+        help:'print the most frequently used git-annex commands'
         map:'generate a visual map of repositories'
         )
     metadata=(
@@ -241,7 +242,7 @@ case $state in
 
 (subcmd)
     case ${line[1]} in
-    (direct|indirect|map|merge|repair|uninit|upgrade|vcycle|version|vicfg|vpop)
+    (direct|indirect|map|merge|repair|uninit|upgrade|vcycle|version|help|vicfg|vpop)
         _message 'No more arguments'
         ;;
     (dead|semitrust|trust|untrust)
