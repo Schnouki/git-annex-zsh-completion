@@ -134,8 +134,8 @@ matching_opts=(
     '--not[negate next option]'
     '--and[both previous and next option must match]'
     '--or[either previous or next option must match]'
-    '-([open group of options]'
-    '-)[close group of options]'
+    '-\\([open group of options]'
+    '-\\)[close group of options]'
 )
 
 _arguments -C \
