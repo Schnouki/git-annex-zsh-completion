@@ -242,7 +242,7 @@ case $state in
 
 (subcmd)
     case ${line[1]} in
-    (direct|indirect|map|merge|repair|uninit|upgrade|vcycle|version|help|vicfg|vpop)
+    (direct|indirect|map|merge|repair|uninit|upgrade|vcycle|version|vicfg|vpop)
         _message 'No more arguments'
         ;;
     (dead|semitrust|trust|untrust)
@@ -304,6 +304,9 @@ case $state in
     (group|ungroup)
         _arguments ':repository:__annex_repository' \
                    ':group name:__annex_groups'
+        ;;
+    (help)
+        _arguments ':list common options:(options)'
         ;;
     (import)
         _arguments $common_opts \
