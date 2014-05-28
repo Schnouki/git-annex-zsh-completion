@@ -115,6 +115,7 @@ common_opts=(
     '--notify-finish[show desktop notification after transfer finishes]'
     '--notify-start[show desktop notification after transfer starts]'
     '-c name=[override git configuration setting]:git configuration setting'
+    '--help[show help on a specific command]'
 )
 matching_opts=(
     '(-x --exclude=)'{-x,--exclude=}'[skip files matching the glob pattern]:glob pattern'
