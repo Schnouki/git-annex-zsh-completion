@@ -231,6 +231,7 @@ case $state in
         test         : 'runs git-annex''s built-in test suite'
         remotedaemon : 'detects when network remotes have received git pushes and fetches from them'
         xmppgit      : 'internal command to perform git pulls over XMPP'
+        fuzztest     : 'generates fuzz test files (developer tool)'
     )
     _describe -t common_commands "common commands" common
     _describe -t setup_commands "setup commands"  setup
