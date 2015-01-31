@@ -1,1 +1,0 @@
-compdef _git-annex
