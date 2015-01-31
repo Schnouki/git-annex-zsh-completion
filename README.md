@@ -19,7 +19,7 @@ If you use [oh-my-zsh][] then just clone the repository inside your oh-my-zsh re
 git clone https://github.com/Schnouki/git-annex-zsh-completion.git ~/.oh-my-zsh/custom/plugins/git-annex
 ```
 
-and enable it in your ```.zshrc```:
+and enable it in your `.zshrc`:
 
 ```zsh
 plugins+=(git-annex)
