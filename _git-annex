@@ -13,6 +13,7 @@
 # Skeleton implementation by Frank Terbeck <ft@bewatermyfriend.org>
 # Blanks filled in by Valentin Haenel <valentin.haenel@gmx.de>
 # Updated by Thomas Jost <schnouki@schnouki.net>
+# Updated by Robin Schneider <ypid@riseup.net>
 # Licence: WTFPL (http://sam.zoy.org/wtfpl/)
 #
 # To use this completion drop it somewhere in you $fpath, e.g.:
@@ -93,7 +94,7 @@ common_opts=(
     '--force[allow actions that may lose annexed data]'
     '(-F --fast)'{-F,--fast}'[avoid slow operations]'
     '(-a --auto)'{-a,--auto}'[automatic mode]'
-    '--all[operate on all data, includin old versions of files]'
+    '--all[operate on all data, including old versions of files]'
     '(-U --unused)'{-U,--unused}'[operate on all unused data]'
     '(-k --key=)'{-k,--key=}'[specifies a key to operate on]:key'
     '(-q --quiet)'{-q,--quiet}'[avoid verbose output]'
@@ -154,7 +155,7 @@ case $state in
         unlock     : 'unlock a file for editing'
         edit       : 'alias for the unlock command'
         lock       : 'lock file again after editing'
-        sync       : 'synchronise with one or more remotes'
+        sync       : 'synchronize with one or more remotes'
         merge      : 'merge the git-annex branches of remotes'
         mirror     : 'mirror a source repository to a destination repository'
         addurl     : 'downloads each url to a file, which is added to the annex'
@@ -170,14 +171,14 @@ case $state in
         describe     : 'changes the description of a repository'
         initremote   : 'set up a special remote'
         enableremote : 'enable an existing special remote for use in the current repository'
-        numcopies    : 'teels git-annex how many copies it should preserve of files'
+        numcopies    : 'tells git-annex how many copies it should preserve of files'
         trust        : 'records that a repository is trusted to not  unexpectedly  lose  content'
         untrust      : 'records that a repository is not trusted and could lose content at any time'
         semitrust    : 'returns a repository to the default semi trusted state'
-        dead         : 'Indicates that the repository has been irretrevably lost.  (To undo, use semitrust.)'
+        dead         : 'Indicates that the repository has been irretrievably lost.  (To undo, use semitrust.)'
         group        : 'adds a repository to a group, such as "archival", "enduser", or "transfer"'
-        ungroup      : 'removes a repository grom a group'
-        wanted       : 'display or configure the preferred conttent setting for a repository'
+        ungroup      : 'removes a repository from a group'
+        wanted       : 'display or configure the preferred content setting for a repository'
         schedule     : 'display or configure scheduled jobs'
         vicfg        : 'opens $EDITOR on a temp file containing most of the configuration settings'
         direct       : 'switches a repository to use direct mode'
