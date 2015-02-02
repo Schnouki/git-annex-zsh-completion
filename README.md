@@ -31,5 +31,6 @@ If you use [antigen][] then you could add the bundle and be done with:
 antigen bundle add Schnouki/git-annex-zsh-completion
 ```
 
+[antigen]: http://antigen.sharats.me/
 [git-annex]: http://git-annex.branchable.com/
 [oh-my-zsh]: http://github.com/robbyrussell/oh-my-zsh
