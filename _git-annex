@@ -1,5 +1,5 @@
 #compdef git-annex
-#description:managing files while ignoring their content
+#description manage files while ignoring their content
 
 # ZSH Completion for git-annex (http://git-annex.branchable.com/)
 #
