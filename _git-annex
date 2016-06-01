@@ -60,17 +60,17 @@ __annex_repository(){
 
     local -a descriptions
     descriptions=($(git annex info --fast --json 2>/dev/null |
-    python3 -c "
+    python3 -c $'
 import json, re, shlex, sys
 parsed = json.load(sys.stdin)
 descriptions = []
-for repo in (parsed['trusted repositories'] + parsed['semitrusted repositories'] + parsed['untrusted repositories']):
-    desc = repo['description']
-    m = re.match(r'(?:(.+?)\s*)?\[(.+)\]', desc)
+for repo in (parsed["trusted repositories"] + parsed["semitrusted repositories"] + parsed["untrusted repositories"]):
+    desc = repo["description"]
+    m = re.match(r"(?:(.+?)\\s*)?\\[(.+)\\]", desc)
     if m is not None:
-        desc = m.group(2) + ('' if m.group(1) is None else (':' + m.group(1)))
+        desc = m.group(2) + ("" if m.group(1) is None else (":" + m.group(1)))
     descriptions.append(desc)
-print(' '.join(descriptions))"))
+print(" ".join(descriptions))'))
     _describe -t descriptions 'known remotes' descriptions
 
     local -a uuids
