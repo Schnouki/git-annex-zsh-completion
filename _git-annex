@@ -27,7 +27,6 @@
 #
 # * 'git annex add' to only complete files not in annex
 # * user defined groups are not detected
-# * remotes with spaces in their description are not handled
 #
 
 local state line context
@@ -59,7 +58,7 @@ __annex_repository(){
     __annex_remotes
 
     local -a descriptions
-    descriptions=($(git annex info --fast --json 2>/dev/null |
+    descriptions=("${(@ps:\0:):-"$(git annex info --fast --json 2>/dev/null |
     python3 -c $'
 import json, re, shlex, sys
 parsed = json.load(sys.stdin)
@@ -70,7 +69,7 @@ for repo in (parsed["trusted repositories"] + parsed["semitrusted repositories"]
     if m is not None:
         desc = m.group(2) + ("" if m.group(1) is None else (":" + m.group(1)))
     descriptions.append(desc)
-print(" ".join(descriptions))'))
+print(*descriptions, sep="\\0")')"}")
     _describe -t descriptions 'known remotes' descriptions
 
     local -a uuids
