@@ -67,7 +67,9 @@ for repo in (parsed["trusted repositories"] + parsed["semitrusted repositories"]
     desc = repo["description"]
     m = re.match(r"(?:(.+?)\\s*)?\\[(.+)\\]", desc)
     if m is not None:
-        desc = m.group(2) + ("" if m.group(1) is None else (":" + m.group(1)))
+        desc = m.group(2)
+        if m.group(1) is not None:
+            desc += ":" + m.group(1).replace(":", r"\\:")
     descriptions.append(desc)
 print(*descriptions, sep="\\0")')"}")
     _describe -t descriptions 'known remotes' descriptions
