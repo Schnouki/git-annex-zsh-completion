@@ -264,9 +264,8 @@ case $state in
                    '*:path:_path_files'
         ;;
     (addunused|dropunused)
-        _alternative $common_opts \
-                     'range:Numbers:_guard "[0-9]#" "range of unused objects"' \
-                     'all:all objects:(all)'
+        _arguments : $common_opts \
+                   '*: : _alternative ": :_guard \"[0-9]#(-[0-9]#|)\" \"numeric range of unused objects\"" "all:all objects:(all)"'
         ;;
     (addurl)
         _arguments $common_opts \
