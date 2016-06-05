@@ -63,7 +63,7 @@ __annex_repository(){
 import json, re, shlex, sys
 parsed = json.load(sys.stdin)
 descriptions = []
-for repo in (parsed["trusted repositories"] + parsed["semitrusted repositories"] + parsed["untrusted repositories"]):
+for repo in (parsed.get("trusted repositories", []) + parsed.get("semitrusted repositories", []) + parsed.get("untrusted repositories", [])):
     desc = repo["description"]
     m = re.match(r"(?:(.+?)\\s*)?\\[(.+)\\]", desc)
     if m is not None:
@@ -80,7 +80,7 @@ print(*descriptions, sep="\\0")')"}")
 import json, re, sys
 parsed = json.load(sys.stdin)
 uuids = []
-for repo in (parsed['trusted repositories'] + parsed['semitrusted repositories'] + parsed['untrusted repositories']):
+for repo in (parsed.get('trusted repositories', []) + parsed.get('semitrusted repositories', []) + parsed.get('untrusted repositories', [])):
     desc = repo['description']
     m = re.match(r'(?:(?P<desc>.+?)\s*)?\[(?P<name>.+)\]', desc)
     if m is not None:
