@@ -259,9 +259,10 @@ case $state in
 
     (add)
         # The positional arguments mimic _git-add()'s positional arguments completion
+        # TODO: the 'modified-files' branch should be intersected with __annex_files, i.e., should exclude modified non-annexed files
         _arguments $common_opts $matching_opts \
                    '--include-dotfiles[include dotfiles that are not explicitly listed]' \
-                   '*:path:__git_ignore_line_inside_arguments __git_other_files ${words[(r)--force]+--ignored}'
+                   '*:path: _alternative -O expl "other-files::__git_ignore_line_inside_arguments __git_other_files ${words[(r)--force]+--ignored}" "modified-files::__git_ignore_line_inside_arguments __git_modified_files"'
         ;;
     (addunused|dropunused)
         _alternative $common_opts \
