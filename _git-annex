@@ -51,6 +51,17 @@ __annex_remotes(){
     _describe -t remotes 'locally available remotes' remotes
 }
 
+# This function completes files that have been 'git annex add'-ed.
+# It does _not_ complete files that have been 'git add'-ed.
+__annex_files_all(){
+  local -a files
+  files=( ${(0)"$(_call_program files git annex find --print0 --include=\*)"} )
+
+  local -a expl
+  _description annexed-files expl "annexed file"
+  compadd "$expl[@]" -a - files
+}
+
 __annex_repository(){
     local -a currents
     currents=('here')
@@ -251,8 +262,15 @@ case $state in
     (dead|semitrust|trust|untrust)
         __annex_repository
         ;;
-    (fix|reinject|unannex)
-        _path_files
+    (fix)
+        _path_files -g '**/*(@^.)'
+        ;;
+    (unannex)
+        __annex_files_all
+        ;;
+    (reinject)
+        _arguments ':out-of-band content location:_path_files' \
+                   ':annexed file:__annex_files_all'
         ;;
     (unused)
         _arguments $common_opts
