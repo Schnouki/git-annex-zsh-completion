@@ -263,7 +263,7 @@ case $state in
         __annex_repository
         ;;
     (fix)
-        _path_files -g '**/*(@^.)'
+        _files -g '*(@^-.)'
         ;;
     (unannex)
         __annex_files_all
