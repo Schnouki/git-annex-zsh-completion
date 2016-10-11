@@ -27,6 +27,7 @@
 #
 # * 'git annex add' to only complete files not in annex
 # * user defined groups are not detected
+# * __git_remotes: show only remotes not in __annex_repository (e.g., using 'compadd -F' and ${(q)}/${(b)})
 #
 
 local state line context
@@ -45,9 +46,9 @@ __annex_groups(){
 }
 
 __annex_remotes(){
-    local -a remotes
-    remotes=($(git remote 2>/dev/null))
-    _describe -t remotes 'locally available remotes' remotes
+    local -a expl
+    _description remotes expl 'locally available remotes' 
+    __git_remotes "$expl[@]"
 }
 
 __annex_repository(){
