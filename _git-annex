@@ -86,7 +86,7 @@ for repo in (parsed.get("trusted repositories", []) + parsed.get("semitrusted re
     m = re.match(r"(?:(?P<desc>.+?)\\s*)?\\[(?P<name>.+)\\]", desc)
     if m is not None:
         desc = m.group(1) if m.group(1) is not None else m.group(2)
-    uuids.append("%s:%s" % (repo["uuid"], desc))
+    uuids.append("%s:%s" % (repo["uuid"], desc.replace(":", r"\\:")))
 print(*uuids, sep="\\0")')"}")
     _describe -t uuids uuid uuids
 }
