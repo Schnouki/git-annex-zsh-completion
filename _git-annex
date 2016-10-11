@@ -27,7 +27,7 @@
 #
 # * 'git annex add' to only complete files not in annex
 # * user defined groups are not detected
-# * remotes with spaces in their description are not handled
+# * __git_remotes: show only remotes not in __annex_repository (e.g., using 'compadd -F' and ${(q)}/${(b)})
 #
 
 local state line context
@@ -46,9 +46,9 @@ __annex_groups(){
 }
 
 __annex_remotes(){
-    local -a remotes
-    remotes=($(git remote 2>/dev/null))
-    _describe -t remotes 'locally available remotes' remotes
+    local -a expl
+    _description remotes expl 'locally available remotes' 
+    __git_remotes "$expl[@]"
 }
 
 __annex_repository(){
@@ -59,33 +59,36 @@ __annex_repository(){
     __annex_remotes
 
     local -a descriptions
-    descriptions=($(git annex info --fast --json 2>/dev/null |
-    python3 -c "
+    descriptions=("${(@ps:\0:):-"$(git annex info --fast --json 2>/dev/null |
+    python3 -c $'
 import json, re, shlex, sys
 parsed = json.load(sys.stdin)
 descriptions = []
-for repo in (parsed['trusted repositories'] + parsed['semitrusted repositories'] + parsed['untrusted repositories']):
-    desc = repo['description']
-    m = re.match(r'(?:(.+?)\s*)?\[(.+)\]', desc)
+for repo in (parsed.get("trusted repositories", []) + parsed.get("semitrusted repositories", []) + parsed.get("untrusted repositories", [])):
+    desc = repo["description"]
+    m = re.match(r"(?:(.+?)\\s*)?\\[(.+)\\]", desc)
     if m is not None:
-        desc = m.group(2) + ('' if m.group(1) is None else (':' + m.group(1)))
-    descriptions.append(desc)
-print(' '.join(descriptions))"))
+        desc = m.group(2)
+        desc = desc.replace(":", r"\\:")
+        if m.group(1) is not None:
+            desc += ":" + m.group(1)
+        descriptions.append(desc)
+print(*descriptions, sep="\\0")')"}")
     _describe -t descriptions 'known remotes' descriptions
 
     local -a uuids
-    uuids=($(git annex info --fast --json 2>/dev/null |
-    python3 -c "
+    uuids=("${(@ps:\0:):-"$(git annex info --fast --json 2>/dev/null |
+    python3 -c $'
 import json, re, sys
 parsed = json.load(sys.stdin)
 uuids = []
-for repo in (parsed['trusted repositories'] + parsed['semitrusted repositories'] + parsed['untrusted repositories']):
-    desc = repo['description']
-    m = re.match(r'(?:(?P<desc>.+?)\s*)?\[(?P<name>.+)\]', desc)
+for repo in (parsed.get("trusted repositories", []) + parsed.get("semitrusted repositories", []) + parsed.get("untrusted repositories", [])):
+    desc = repo["description"]
+    m = re.match(r"(?:(?P<desc>.+?)\\s*)?\\[(?P<name>.+)\\]", desc)
     if m is not None:
         desc = m.group(1) if m.group(1) is not None else m.group(2)
-    uuids.append('%s:%s' % (repo['uuid'], desc))
-print(' '.join(uuids))"))
+    uuids.append("%s:%s" % (repo["uuid"], desc.replace(":", r"\\:")))
+print(*uuids, sep="\\0")')"}")
     _describe -t uuids uuid uuids
 }
 
