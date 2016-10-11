@@ -76,18 +76,18 @@ print(*descriptions, sep="\\0")')"}")
     _describe -t descriptions 'known remotes' descriptions
 
     local -a uuids
-    uuids=($(git annex info --fast --json 2>/dev/null |
-    python3 -c "
+    uuids=("${(@ps:\0:):-"$(git annex info --fast --json 2>/dev/null |
+    python3 -c $'
 import json, re, sys
 parsed = json.load(sys.stdin)
 uuids = []
-for repo in (parsed.get('trusted repositories', []) + parsed.get('semitrusted repositories', []) + parsed.get('untrusted repositories', [])):
-    desc = repo['description']
-    m = re.match(r'(?:(?P<desc>.+?)\s*)?\[(?P<name>.+)\]', desc)
+for repo in (parsed.get("trusted repositories", []) + parsed.get("semitrusted repositories", []) + parsed.get("untrusted repositories", [])):
+    desc = repo["description"]
+    m = re.match(r"(?:(?P<desc>.+?)\\s*)?\\[(?P<name>.+)\\]", desc)
     if m is not None:
         desc = m.group(1) if m.group(1) is not None else m.group(2)
-    uuids.append('%s:%s' % (repo['uuid'], desc))
-print(' '.join(uuids))"))
+    uuids.append("%s:%s" % (repo["uuid"], desc))
+print(*uuids, sep="\\0")')"}")
     _describe -t uuids uuid uuids
 }
 
